@@ -251,6 +251,236 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/05/kafkaserver/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="QianHuang">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Qian Huang">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/08/05/kafkaserver/" itemprop="url">Kafka - Components of KafkaServer(Broker)</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-08-05T14:38:30+08:00">
+                2017-08-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>kafka version: 0.10.0</p>
+<p>If you look into the source code of KafkaServer (broker), you will know what components are starting in KafkaServer and learn what KafkaServer responsibility are. Let’s look at some code.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">startup</span></span>() &#123;</div><div class="line">...</div><div class="line">  	<span class="comment">/* start log manager */</span></div><div class="line"></div><div class="line">      logManager = createLogManager(zkUtils.zkClient, brokerState)</div><div class="line">      logManager.startup()</div><div class="line">      </div><div class="line">      <span class="comment">/* start socketServer */</span></div><div class="line">      socketServer = <span class="keyword">new</span> <span class="type">SocketServer</span>(config, metrics, kafkaMetricsTime)</div><div class="line">      socketServer.startup()</div><div class="line"></div><div class="line">      <span class="comment">/* start replica manager */</span></div><div class="line">      replicaManager = <span class="keyword">new</span> <span class="type">ReplicaManager</span>(config, metrics, time, kafkaMetricsTime, zkUtils, kafkaScheduler, logManager, isShuttingDown)</div><div class="line">      replicaManager.startup()</div><div class="line"></div><div class="line">      ...</div><div class="line"></div><div class="line">      <span class="comment">/* start group coordinator */</span></div><div class="line">      groupCoordinator = <span class="type">GroupCoordinator</span>(config, zkUtils, replicaManager, kafkaMetricsTime)</div><div class="line">      groupCoordinator.startup()</div><div class="line"></div><div class="line">      ...</div><div class="line"></div><div class="line">      <span class="comment">/* start processing requests */</span></div><div class="line">      apis = <span class="keyword">new</span> <span class="type">KafkaApis</span>(socketServer.requestChannel, replicaManager, groupCoordinator, kafkaController, zkUtils, config.brokerId, config, metadataCache, metrics, authorizer)</div><div class="line">      </div><div class="line">      ...</div><div class="line"></div><div class="line"></div><div class="line">      <span class="comment">// Create the config manager. start listening to notifications</span></div><div class="line">      dynamicConfigManager = <span class="keyword">new</span> <span class="type">DynamicConfigManager</span>(zkUtils, dynamicConfigHandlers)</div><div class="line">      dynamicConfigManager.startup()</div><div class="line"></div><div class="line"></div><div class="line">      kafkaHealthcheck = <span class="keyword">new</span> <span class="type">KafkaHealthcheck</span>(config.brokerId, listeners, zkUtils, config.rack, config.interBrokerProtocolVersion)</div><div class="line">      kafkaHealthcheck.startup()</div><div class="line">    ...</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>About these componets:<br><strong>LogManager</strong><br>    the main class of package <code>kafka.log</code>, the entry point to the kafka log management subsystem, responsible for log creation, retrieval, and cleaning.<br><strong>SockerServer</strong><br>    An NIO socket server, the main class of package <code>kafka.network</code>, the entry point to the kafka network layer, accepts all requests from client side, has 1 Acceptor, n Processor, m Handler.<br><strong>ReplicaManager</strong><br>    Entry point to the kafka replication subsystem.<br><strong>GroupCoordinator</strong><br>   handle general group membership and offset management. Each Kafka server instantiates a coordinator which is responsible for a set of groups. Groups are assigned to coordinators based on their group names.<br><strong>KafkaApis</strong><br>    Logic to handle the various Kafka requests<br><strong>DynamicConfigManager</strong><br>    manager all configuration entity, e.g. topic configuration<br><strong>KafkaHealthcheck</strong><br>    register this broker in zookeeper</p>
+<p>On <a href="https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Internals" target="_blank" rel="external">Kafka Internal</a>, this diagram explains how all these components work together.<br><img src="http://oqaz1jnpj.bkt.clouddn.com/kafka%20broker%20internals.png" alt=""></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/05/23/kafka-log-management/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="QianHuang">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Qian Huang">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/05/23/kafka-log-management/" itemprop="url">Kafka - Log Management</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-05-23T11:49:46+08:00">
+                2017-05-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Kafka version: 0.10.0<br>package name: <code>kafka.log</code></p>
+<p><img src="http://oqaz1jnpj.bkt.clouddn.com/logmanagment.jpg" alt="Log Management"></p>
+<p>The above diagram contain main classes in package <code>kafka.log</code>.<br>From physical storage side, </p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/05/23/kafka-command/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -270,7 +500,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/05/23/kafka-command/" itemprop="url">Kafka - Useful Administrator Command</a></h1>
+                <a class="post-title-link" href="/2017/05/23/kafka-command/" itemprop="url">Kafka - Operation and TroubleShooting (DRAFT)</a></h1>
         
 
         <div class="post-meta">
@@ -320,7 +550,7 @@
         
           
             <p>kafka version: 0.10.0 and higher</p>
-<ul>
+<h3 id="Useful-command-to-check-cluster-health"><a href="#Useful-command-to-check-cluster-health" class="headerlink" title="Useful command to check cluster health"></a>Useful command to check cluster health</h3><ul>
 <li>Show all partitions which there is no leader at all</li>
 </ul>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$&#123;kafka_root_dir&#125;/bin/kafka-topics.sh --describe \</div><div class="line">--unavailable-partitions</div></pre></td></tr></table></figure>
@@ -662,7 +892,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">5</span>
                 <span class="site-state-item-name">posts</span>
               </a>
             </div>
@@ -675,7 +905,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-count">3</span>
                 <span class="site-state-item-name">tags</span>
               
             </div>

@@ -74,7 +74,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="spark," />
+  <meta name="keywords" content="kafka," />
 
 
 
@@ -90,14 +90,19 @@
 
 
 
-<meta name="keywords" content="spark">
+<meta name="description" content="kafka version: 0.10.0 If you look into the source code of KafkaServer (broker), you will know what components are starting in KafkaServer and learn what KafkaServer responsibility are. Let’s look at s">
+<meta name="keywords" content="kafka">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Spark Streaming">
-<meta property="og:url" content="http://yoursite.com/2017/05/21/sparkstreaming/index.html">
+<meta property="og:title" content="Kafka - Components of KafkaServer(Broker)">
+<meta property="og:url" content="http://yoursite.com/2017/08/05/kafkaserver/index.html">
 <meta property="og:site_name" content="Qian Huang">
-<meta property="og:updated_time" content="2017-05-21T13:16:02.000Z">
+<meta property="og:description" content="kafka version: 0.10.0 If you look into the source code of KafkaServer (broker), you will know what components are starting in KafkaServer and learn what KafkaServer responsibility are. Let’s look at s">
+<meta property="og:image" content="http://oqaz1jnpj.bkt.clouddn.com/kafka%20broker%20internals.png">
+<meta property="og:updated_time" content="2017-08-13T12:23:29.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Spark Streaming">
+<meta name="twitter:title" content="Kafka - Components of KafkaServer(Broker)">
+<meta name="twitter:description" content="kafka version: 0.10.0 If you look into the source code of KafkaServer (broker), you will know what components are starting in KafkaServer and learn what KafkaServer responsibility are. Let’s look at s">
+<meta name="twitter:image" content="http://oqaz1jnpj.bkt.clouddn.com/kafka%20broker%20internals.png">
 
 
 
@@ -125,13 +130,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2017/05/21/sparkstreaming/"/>
+  <link rel="canonical" href="http://yoursite.com/2017/08/05/kafkaserver/"/>
 
 
 
 
 
-  <title>Spark Streaming | Qian Huang</title>
+  <title>Kafka - Components of KafkaServer(Broker) | Qian Huang</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="en">
@@ -251,7 +256,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/05/21/sparkstreaming/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/05/kafkaserver/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="QianHuang">
@@ -268,7 +273,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Spark Streaming</h1>
+          <h1 class="post-title" itemprop="name headline">Kafka - Components of KafkaServer(Broker)</h1>
         
 
         <div class="post-meta">
@@ -280,8 +285,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-05-21T21:11:30+08:00">
-                2017-05-21
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-08-05T14:38:30+08:00">
+                2017-08-05
               </time>
             
 
@@ -315,7 +320,12 @@
       
 
       
-        
+        <p>kafka version: 0.10.0</p>
+<p>If you look into the source code of KafkaServer (broker), you will know what components are starting in KafkaServer and learn what KafkaServer responsibility are. Let’s look at some code.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">startup</span></span>() &#123;</div><div class="line">...</div><div class="line">  	<span class="comment">/* start log manager */</span></div><div class="line"></div><div class="line">      logManager = createLogManager(zkUtils.zkClient, brokerState)</div><div class="line">      logManager.startup()</div><div class="line">      </div><div class="line">      <span class="comment">/* start socketServer */</span></div><div class="line">      socketServer = <span class="keyword">new</span> <span class="type">SocketServer</span>(config, metrics, kafkaMetricsTime)</div><div class="line">      socketServer.startup()</div><div class="line"></div><div class="line">      <span class="comment">/* start replica manager */</span></div><div class="line">      replicaManager = <span class="keyword">new</span> <span class="type">ReplicaManager</span>(config, metrics, time, kafkaMetricsTime, zkUtils, kafkaScheduler, logManager, isShuttingDown)</div><div class="line">      replicaManager.startup()</div><div class="line"></div><div class="line">      ...</div><div class="line"></div><div class="line">      <span class="comment">/* start group coordinator */</span></div><div class="line">      groupCoordinator = <span class="type">GroupCoordinator</span>(config, zkUtils, replicaManager, kafkaMetricsTime)</div><div class="line">      groupCoordinator.startup()</div><div class="line"></div><div class="line">      ...</div><div class="line"></div><div class="line">      <span class="comment">/* start processing requests */</span></div><div class="line">      apis = <span class="keyword">new</span> <span class="type">KafkaApis</span>(socketServer.requestChannel, replicaManager, groupCoordinator, kafkaController, zkUtils, config.brokerId, config, metadataCache, metrics, authorizer)</div><div class="line">      </div><div class="line">      ...</div><div class="line"></div><div class="line"></div><div class="line">      <span class="comment">// Create the config manager. start listening to notifications</span></div><div class="line">      dynamicConfigManager = <span class="keyword">new</span> <span class="type">DynamicConfigManager</span>(zkUtils, dynamicConfigHandlers)</div><div class="line">      dynamicConfigManager.startup()</div><div class="line"></div><div class="line"></div><div class="line">      kafkaHealthcheck = <span class="keyword">new</span> <span class="type">KafkaHealthcheck</span>(config.brokerId, listeners, zkUtils, config.rack, config.interBrokerProtocolVersion)</div><div class="line">      kafkaHealthcheck.startup()</div><div class="line">    ...</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>About these componets:<br><strong>LogManager</strong><br>    the main class of package <code>kafka.log</code>, the entry point to the kafka log management subsystem, responsible for log creation, retrieval, and cleaning.<br><strong>SockerServer</strong><br>    An NIO socket server, the main class of package <code>kafka.network</code>, the entry point to the kafka network layer, accepts all requests from client side, has 1 Acceptor, n Processor, m Handler.<br><strong>ReplicaManager</strong><br>    Entry point to the kafka replication subsystem.<br><strong>GroupCoordinator</strong><br>   handle general group membership and offset management. Each Kafka server instantiates a coordinator which is responsible for a set of groups. Groups are assigned to coordinators based on their group names.<br><strong>KafkaApis</strong><br>    Logic to handle the various Kafka requests<br><strong>DynamicConfigManager</strong><br>    manager all configuration entity, e.g. topic configuration<br><strong>KafkaHealthcheck</strong><br>    register this broker in zookeeper</p>
+<p>On <a href="https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Internals" target="_blank" rel="external">Kafka Internal</a>, this diagram explains how all these components work together.<br><img src="http://oqaz1jnpj.bkt.clouddn.com/kafka%20broker%20internals.png" alt=""></p>
+
       
     </div>
 
@@ -344,7 +354,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/spark/" rel="tag"># spark</a>
+            <a href="/tags/kafka/" rel="tag"># kafka</a>
           
         </div>
       
@@ -357,15 +367,15 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
+              <a href="/2017/05/23/kafka-log-management/" rel="next" title="Kafka - Log Management">
+                <i class="fa fa-chevron-left"></i> Kafka - Log Management
+              </a>
+            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2017/05/21/hello-world/" rel="prev" title="Hello World">
-                Hello World <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
